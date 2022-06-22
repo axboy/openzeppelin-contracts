@@ -231,18 +231,19 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
 
-        _beforeTokenTransfer(from, to, amount);
+        uint256 receiveAmount = _handleTransferFeeWhenTokenTransfer(from, to, amount);
+        require(receiveAmount <= amount, "ERC20: receive amount exceeds source amount");
 
+        _beforeTokenTransfer(from, to, receiveAmount);
         uint256 fromBalance = _balances[from];
-        require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
+        require(fromBalance >= receiveAmount, "ERC20: transfer amount exceeds balance");
         unchecked {
-            _balances[from] = fromBalance - amount;
+            _balances[from] = fromBalance - receiveAmount;
         }
-        _balances[to] += amount;
+        _balances[to] += receiveAmount;
+        emit Transfer(from, to, receiveAmount);
 
-        emit Transfer(from, to, amount);
-
-        _afterTokenTransfer(from, to, amount);
+        _afterTokenTransfer(from, to, receiveAmount);
     }
 
     /** @dev Creates `amount` tokens and assigns them to `account`, increasing
@@ -380,4 +381,16 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
         address to,
         uint256 amount
     ) internal virtual {}
+
+    /**
+     * @dev handle transfer fee, hook that is called in _transfer(from, to, amount) only.
+     * receive value must less than amount
+     */
+    function _handleTransferFeeWhenTokenTransfer(
+        address,
+        address,
+        uint256 amount
+    ) internal virtual returns (uint256 receiveAmount) {
+        receiveAmount = amount;
+    }
 }
