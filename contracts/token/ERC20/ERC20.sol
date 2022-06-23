@@ -235,13 +235,8 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
         require(receiveAmount <= amount, "ERC20: receive amount exceeds source amount");
 
         _beforeTokenTransfer(from, to, receiveAmount);
-        uint256 fromBalance = _balances[from];
-        require(fromBalance >= receiveAmount, "ERC20: transfer amount exceeds balance");
-        unchecked {
-            _balances[from] = fromBalance - receiveAmount;
-        }
-        _balances[to] += receiveAmount;
-        emit Transfer(from, to, receiveAmount);
+
+        _standardTransfer(from, to, receiveAmount);
 
         _afterTokenTransfer(from, to, receiveAmount);
     }
@@ -392,5 +387,22 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
         uint256 amount
     ) internal virtual returns (uint256 receiveAmount) {
         receiveAmount = amount;
+    }
+
+    /**
+     * @dev transfer with no hook
+     */
+    function _standardTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal {
+        require(from != address(0), "ERC20: transfer from the zero address");
+        require(to != address(0), "ERC20: transfer to the zero address");
+        require(_balances[from] >= amount, "ERC20: transfer amount exceeds balance");
+
+        _balances[from] -= amount;
+        _balances[to] += amount;
+        emit Transfer(from, to, amount);
     }
 }
